@@ -2,8 +2,12 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.beans.PropertyChangeListener;
+import java.awt.event.ActionListener;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.net.Socket;
 
 public class Client {
     public static void main(String[] args) {
@@ -38,7 +42,7 @@ public class Client {
         jbSendFile.setFont(new Font("Arial",Font.BOLD,20));
 
         //Button for File Choosing
-        JButton jbChooseFile = new JButton("Send File");
+        JButton jbChooseFile = new JButton("Choose File");
         jbChooseFile.setPreferredSize(new Dimension(150,75));
         jbChooseFile.setFont(new Font("Arial",Font.BOLD,20));
 
@@ -54,46 +58,45 @@ public class Client {
 
                 if (jFileChooser.showOpenDialog(null)== JFileChooser.APPROVE_OPTION){
                     fileToSend[0] = jFileChooser.getSelectedFile();
-                    jlFileName.setText("The file you want to send is: "+fileToSend[0].getName());
+                    jlFileName.setText("The file you want to send is: "+ fileToSend[0].getName());
                 }
             }
         });
 
-        jbSendFile.addActionListener(new Action() {
-            @Override
-            public Object getValue(String key) {
-                return null;
-            }
-
-            @Override
-            public void putValue(String key, Object value) {
-
-            }
-
-            @Override
-            public void setEnabled(boolean b) {
-
-            }
-
-            @Override
-            public boolean isEnabled() {
-                return false;
-            }
-
-            @Override
-            public void addPropertyChangeListener(PropertyChangeListener listener) {
-
-            }
-
-            @Override
-            public void removePropertyChangeListener(PropertyChangeListener listener) {
-
-            }
-
+        jbSendFile.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                if(fileToSend[0] == null){
+                    jlFileName.setText("Please Choose a file first.");
+                }else{
+                    try{
+                        FileInputStream fileInputStream = new FileInputStream(fileToSend[0].getAbsolutePath());
+                        Socket socket = new Socket("localhost",1234);
 
+                        DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
+
+                        String fileName = fileToSend[0].getName();
+                        byte[] fileNameBytes = fileName.getBytes();
+
+                        byte[] fileContentBytes = new byte[(int)fileToSend[0].length()];
+                        fileInputStream.read(fileContentBytes);
+
+                        dataOutputStream.writeInt(fileNameBytes.length);
+                        dataOutputStream.write(fileNameBytes);
+
+                        dataOutputStream.writeInt(fileContentBytes.length);
+                        dataOutputStream.write(fileContentBytes);
+                    }catch (IOException exception){
+                        exception.printStackTrace();
+                    }
+                }
             }
         });
+
+        jFrame.add(JlTitle);
+        jFrame.add(jlFileName);
+        jFrame.add(jpButton);
+        jFrame.setVisible(true);
+
     }
 }
